@@ -1,13 +1,16 @@
 import "dotenv/config";
 
-import { handleWebSearch } from "./src/agents/webSearchAgent.js";
+import {
+  handleYoutubeSearch,
+} from "./src/agents/youtubeSearchAgent.js";
 
-const emitter = handleWebSearch(
-  "What is artificial intelligence?"
-);
+const emitter =
+  handleYoutubeSearch(
+    "best React tutorials for beginners"
+  );
 
 emitter.on("sources", (sources) => {
-  console.log("\n\nSOURCES:");
+  console.log("\n\nYOUTUBE SOURCES:");
   console.log(sources);
 });
 

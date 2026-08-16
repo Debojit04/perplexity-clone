@@ -14,6 +14,10 @@ import {
 
 import { handleStream } from "../utils/handleStream.js";
 
+import {
+  handleYoutubeSearch,
+} from "../agents/youtubeSearchAgent.js";
+
 const router = Router();
 
 router.post("/", async (req, res) => {
@@ -32,10 +36,12 @@ router.post("/", async (req, res) => {
     // Select search agent
     // --------------------------------
 
-    if (mode === "reddit") {
+   if (mode === "reddit") {
   emitter = handleRedditSearch(query);
 } else if (mode === "web") {
   emitter = handleWebSearch(query);
+} else if (mode === "youtube") {
+  emitter = handleYoutubeSearch(query);
 } else {
   emitter =
     academicSearchAgentStream(query);

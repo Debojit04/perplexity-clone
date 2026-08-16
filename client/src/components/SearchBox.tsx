@@ -5,7 +5,8 @@ import { Search } from "lucide-react";
 export type SearchMode =
   | "academic"
   | "reddit"
-    "web";
+  | "web"
+  | "youtube";
 
 interface SearchBoxProps {
   onSearch: (
@@ -40,27 +41,32 @@ function SearchBox({
       className="search-box"
       onSubmit={handleSubmit}
     >
-     <select
-  value={mode}
-  onChange={(event) =>
-    setMode(
-      event.target.value as SearchMode
-    )
-  }
-  disabled={loading}
->
-  <option value="academic">
-    Academic
-  </option>
+      <select
+        value={mode}
+        onChange={(event) =>
+          setMode(
+            event.target.value as SearchMode
+          )
+        }
+        disabled={loading}
+      >
+        <option value="academic">
+          Academic
+        </option>
 
-  <option value="reddit">
-    Reddit
-  </option>
+        <option value="reddit">
+          Reddit
+        </option>
 
-  <option value="web">
-    Web
-  </option>
-</select>
+        <option value="web">
+          Web
+        </option>
+
+        <option value="youtube">
+          YouTube
+        </option>
+      </select>
+
       <input
         value={query}
         onChange={(event) =>
