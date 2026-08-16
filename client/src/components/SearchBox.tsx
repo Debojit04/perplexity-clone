@@ -2,8 +2,15 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Search } from "lucide-react";
 
+export type SearchMode =
+  | "academic"
+  | "reddit";
+
 interface SearchBoxProps {
-  onSearch: (query: string) => void;
+  onSearch: (
+    query: string,
+    mode: SearchMode
+  ) => void;
   loading: boolean;
 }
 
@@ -11,8 +18,9 @@ function SearchBox({
   onSearch,
   loading,
 }: SearchBoxProps) {
-  const [query, setQuery] =
-    useState("");
+  const [query, setQuery] = useState("");
+  const [mode, setMode] =
+    useState<SearchMode>("academic");
 
   const handleSubmit = (
     event: FormEvent
@@ -23,7 +31,7 @@ function SearchBox({
       return;
     }
 
-    onSearch(query);
+    onSearch(query, mode);
   };
 
   return (
@@ -31,6 +39,24 @@ function SearchBox({
       className="search-box"
       onSubmit={handleSubmit}
     >
+      <select
+        value={mode}
+        onChange={(event) =>
+          setMode(
+            event.target.value as SearchMode
+          )
+        }
+        disabled={loading}
+      >
+        <option value="academic">
+          Academic
+        </option>
+
+        <option value="reddit">
+          Reddit
+        </option>
+      </select>
+
       <input
         value={query}
         onChange={(event) =>

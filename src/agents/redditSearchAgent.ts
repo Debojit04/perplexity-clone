@@ -1,9 +1,9 @@
 import { EventEmitter } from "events";
 
 import {
-  academicSearchPrompt,
-  academicAnswerPrompt,
-} from "../prompts/academicPrompt.js";
+  redditSearchPrompt,
+  redditAnswerPrompt,
+} from "../prompts/redditPrompt.js";
 
 import { llm } from "../lib/llm.js";
 import { searchSearxng } from "../lib/searxng.js";
@@ -11,28 +11,22 @@ import { searchResultsToDocs } from "../lib/searchToDocs.js";
 import { rerankDocs } from "../lib/rerankDocs.js";
 import { processDocs } from "../lib/processDocs.js";
 import { processSources } from "../lib/processSources.js";
-import { handleStream } from "../utils/handleStream.js";
-
 
 const queryRewriteChain =
-  academicSearchPrompt.pipe(llm);
+  redditSearchPrompt.pipe(llm);
 
 const answerChain =
-  academicAnswerPrompt.pipe(llm);
+  redditAnswerPrompt.pipe(llm);
 
-export function academicSearchAgentStream(
+export function handleRedditSearch(
   query: string
 ) {
   const emitter = new EventEmitter();
 
-  // Start the actual work asynchronously.
-  // The emitter is returned immediately so that
-  // Express can attach listeners before any events fire.
-
   void (async () => {
     try {
       // --------------------------------
-      // 1. Rewrite search query
+      // 1. Rewrite query for Reddit
       // --------------------------------
 
       const rewrittenResponse =
@@ -44,22 +38,25 @@ export function academicSearchAgentStream(
         rewrittenResponse.content.toString();
 
       console.log(
-        "Search query:",
+        "Reddit search query:",
         rewrittenQuery
       );
 
       // --------------------------------
-      // 2. Search with SearXNG
+      // 2. Search Reddit with SearXNG
       // --------------------------------
 
       const searchData =
-        await searchSearxng(rewrittenQuery);
+        await searchSearxng(
+          rewrittenQuery,
+          ["reddit"]
+        );
 
       const results =
         searchData.results ?? [];
 
       console.log(
-        `SearXNG results: ${results.length}`
+        `Reddit results: ${results.length}`
       );
 
       // --------------------------------
@@ -68,6 +65,10 @@ export function academicSearchAgentStream(
 
       const docs =
         searchResultsToDocs(results);
+
+      console.log(
+        `Reddit documents: ${docs.length}`
+      );
 
       // --------------------------------
       // 4. Rerank documents
@@ -78,6 +79,10 @@ export function academicSearchAgentStream(
           rewrittenQuery,
           docs
         );
+
+      console.log(
+        `Reddit ranked documents: ${rankedDocs.length}`
+      );
 
       // --------------------------------
       // 5. Create context
@@ -93,49 +98,52 @@ export function academicSearchAgentStream(
       const sources =
         processSources(rankedDocs);
 
-      // Send sources to Express
       emitter.emit(
         "sources",
         sources
       );
 
       // --------------------------------
-      // 7. Stream Groq answer
+      // 7. Stream Reddit answer
       // --------------------------------
-     const stream = await answerChain.streamEvents(
-    {
-      query,
-      context,
-    },
-      {
-       version: "v2",
+
+      const stream =
+        await answerChain.streamEvents(
+          {
+            query,
+            context,
+          },
+          {
+            version: "v2",
+          }
+        );
+
+      for await (const event of stream) {
+        if (
+          event.event ===
+          "on_chat_model_stream"
+        ) {
+          const chunk =
+            event.data.chunk;
+
+          if (chunk?.content) {
+            emitter.emit(
+              "response",
+              chunk.content.toString()
+            );
+          }
+        }
       }
-    );
 
-       for await (const event of stream) {
-       if (event.event === "on_chat_model_stream") {
-       const chunk = event.data.chunk;
-
-       if (chunk?.content) {
-       emitter.emit(
-        "response",
-        chunk.content.toString()
-      );
-    }
-  }
-}
-
-      emitter.emit("end");
       // --------------------------------
       // 8. Finished
       // --------------------------------
 
-      
+      emitter.emit("end");
 
     } catch (error) {
-
       console.error(
-        "Academic agent error:",
+        "Reddit search agent error:",
         error
       );
 
@@ -146,7 +154,5 @@ export function academicSearchAgentStream(
     }
   })();
 
-  // IMPORTANT:
-  // Return immediately.
   return emitter;
 }

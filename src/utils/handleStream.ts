@@ -1,51 +1,93 @@
+import { Response } from "express";
 import { EventEmitter } from "events";
 
-export async function handleStream(
-  emitter: EventEmitter,
-  answerChain: any,
-  query: string,
-  context: string
+export function handleStream(
+  res: Response,
+  emitter: EventEmitter
 ) {
-  try {
-    const stream =
-      await answerChain.streamEvents(
+  // Tell the browser that this is an SSE stream
+  res.setHeader(
+    "Content-Type",
+    "text/event-stream"
+  );
+
+  res.setHeader(
+    "Cache-Control",
+    "no-cache"
+  );
+
+  res.setHeader(
+    "Connection",
+    "keep-alive"
+  );
+
+  // Send data to the client
+  const sendEvent = (
+    event: string,
+    data: unknown
+  ) => {
+    res.write(
+      `event: ${event}\n`
+    );
+
+    res.write(
+      `data: ${JSON.stringify(data)}\n\n`
+    );
+  };
+
+  // Sources
+  emitter.on(
+    "sources",
+    (sources) => {
+      sendEvent(
+        "sources",
+        sources
+      );
+    }
+  );
+
+  // Streaming answer chunks
+  emitter.on(
+    "response",
+    (chunk) => {
+      sendEvent(
+        "response",
+        chunk
+      );
+    }
+  );
+
+  // Errors
+  emitter.on(
+    "error",
+    (error) => {
+      sendEvent(
+        "error",
         {
-          query,
-          context,
-        },
-        {
-          version: "v2",
+          error:
+            error instanceof Error
+              ? error.message
+              : "Something went wrong",
         }
       );
 
-    for await (const event of stream) {
-      if (
-        event.event ===
-        "on_chat_model_stream"
-      ) {
-        const chunk =
-          event.data.chunk;
-
-        if (chunk?.content) {
-          emitter.emit(
-            "response",
-            chunk.content.toString()
-          );
-        }
-      }
+      res.end();
     }
+  );
 
-    emitter.emit("end");
+  // Stream finished
+  emitter.on(
+    "end",
+    () => {
+      res.end();
+    }
+  );
 
-  } catch (error) {
-    console.error(
-      "Streaming error:",
-      error
-    );
-
-    emitter.emit(
-      "error",
-      error
-    );
-  }
+  // Handle client disconnect
+  res.on(
+    "close",
+    () => {
+      emitter.removeAllListeners();
+    }
+  );
 }

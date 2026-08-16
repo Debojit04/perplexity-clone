@@ -6,13 +6,20 @@ export interface Source {
   url: string;
 }
 
+export type SearchMode =
+  | "academic"
+  | "reddit";
+
 export function useSearch() {
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const search = async (query: string) => {
+  const search = async (
+    query: string,
+    mode: SearchMode
+  ) => {
     if (!query.trim()) {
       return;
     }
@@ -23,17 +30,22 @@ export function useSearch() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/search", {
-        method: "POST",
+      const response = await fetch(
+        "/api/search",
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json",
-        },
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
 
-        body: JSON.stringify({
-          query,
-        }),
-      });
+          body: JSON.stringify({
+            query,
+            mode,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error(
@@ -42,69 +54,94 @@ export function useSearch() {
       }
 
       if (!response.body) {
-        throw new Error("Response body is empty");
+        throw new Error(
+          "Response body is empty"
+        );
       }
 
-      const reader = response.body.getReader();
+      const reader =
+        response.body.getReader();
 
-      const decoder = new TextDecoder();
+      const decoder =
+        new TextDecoder();
 
       let buffer = "";
 
       while (true) {
-        const { value, done } =
-          await reader.read();
+        const {
+          value,
+          done,
+        } = await reader.read();
 
         if (done) {
           break;
         }
 
-        buffer += decoder.decode(value, {
-          stream: true,
-        });
+        buffer += decoder.decode(
+          value,
+          {
+            stream: true,
+          }
+        );
 
-        const events = buffer.split("\n\n");
+        const events =
+          buffer.split("\n\n");
 
-        buffer = events.pop() || "";
+        buffer =
+          events.pop() || "";
 
         for (const event of events) {
           processEvent(event);
         }
       }
 
-      // Process anything left in the buffer
       if (buffer.trim()) {
         processEvent(buffer);
       }
 
     } catch (err) {
-      console.error("Search error:", err);
+      console.error(
+        "Search error:",
+        err
+      );
 
       setError(
         err instanceof Error
           ? err.message
           : "Something went wrong"
       );
+
     } finally {
       setLoading(false);
     }
   };
 
-  const processEvent = (event: string) => {
-    const lines = event.split("\n");
+  const processEvent = (
+    event: string
+  ) => {
+    const lines =
+      event.split("\n");
 
     let eventType = "";
     let data = "";
 
     for (const line of lines) {
 
-      if (line.startsWith("event:")) {
+      if (
+        line.startsWith("event:")
+      ) {
         eventType =
-          line.substring(6).trim();
+          line
+            .substring(6)
+            .trim();
       }
 
-      if (line.startsWith("data:")) {
-        data += line.substring(5).trimStart();
+      if (
+        line.startsWith("data:")
+      ) {
+        data += line
+          .substring(5)
+          .trimStart();
       }
     }
 
@@ -113,7 +150,8 @@ export function useSearch() {
     }
 
     try {
-      const parsed = JSON.parse(data);
+      const parsed =
+        JSON.parse(data);
 
       switch (eventType) {
 
