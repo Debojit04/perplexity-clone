@@ -8,7 +8,8 @@ export interface Source {
 
 export type SearchMode =
   | "academic"
-  | "reddit";
+  | "reddit"
+     "web";
 
 export function useSearch() {
   const [answer, setAnswer] = useState("");

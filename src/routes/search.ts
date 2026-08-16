@@ -1,6 +1,10 @@
 import { Router } from "express";
 
 import {
+  handleWebSearch,
+} from "../agents/webSearchAgent.js";
+
+import {
   academicSearchAgentStream,
 } from "../agents/academicSearchAgentStream.js";
 
@@ -29,11 +33,13 @@ router.post("/", async (req, res) => {
     // --------------------------------
 
     if (mode === "reddit") {
-      emitter = handleRedditSearch(query);
-    } else {
-      emitter =
-        academicSearchAgentStream(query);
-    }
+  emitter = handleRedditSearch(query);
+} else if (mode === "web") {
+  emitter = handleWebSearch(query);
+} else {
+  emitter =
+    academicSearchAgentStream(query);
+}
 
     // --------------------------------
     // Handle SSE stream
