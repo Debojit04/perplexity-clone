@@ -11,6 +11,8 @@ import { searchResultsToDocs } from "../lib/searchToDocs.js";
 import { rerankDocs } from "../lib/rerankDocs.js";
 import { processDocs } from "../lib/processDocs.js";
 import { processSources } from "../lib/processSources.js";
+import { handleStream } from "../utils/handleStream.js";
+
 
 const queryRewriteChain =
   academicSearchPrompt.pipe(llm);
@@ -101,39 +103,18 @@ export function academicSearchAgentStream(
       // 7. Stream Groq answer
       // --------------------------------
 
-      const stream =
-        await answerChain.streamEvents(
-          {
-            query,
-            context,
-          },
-          {
-            version: "v2",
-          }
-        );
-
-      for await (const event of stream) {
-        if (
-          event.event ===
-          "on_chat_model_stream"
-        ) {
-          const chunk =
-            event.data.chunk;
-
-          if (chunk?.content) {
-            emitter.emit(
-              "response",
-              chunk.content.toString()
-            );
-          }
-        }
-      }
+      await handleStream(
+       emitter,
+      answerChain,
+      query,
+      context
+    );
 
       // --------------------------------
       // 8. Finished
       // --------------------------------
 
-      emitter.emit("end");
+      
 
     } catch (error) {
 
