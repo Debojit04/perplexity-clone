@@ -6,17 +6,29 @@ export interface Source {
   url: string;
 }
 
+export interface Video {
+  img_src: string;
+  url: string;
+  title: string;
+  iframe_src: string;
+}
+
 export type SearchMode =
   | "academic"
   | "reddit"
-     "web"
-     "youtube";
+  | "web"
+  | "youtube";
 
 export function useSearch() {
   const [answer, setAnswer] = useState("");
-  const [sources, setSources] = useState<Source[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [sources, setSources] =
+    useState<Source[]>([]);
+  const [videos, setVideos] =
+    useState<Video[]>([]);
+  const [loading, setLoading] =
+    useState(false);
+  const [error, setError] =
+    useState("");
 
   const search = async (
     query: string,
@@ -26,8 +38,10 @@ export function useSearch() {
       return;
     }
 
+    // Clear previous search
     setAnswer("");
     setSources([]);
+    setVideos([]);
     setError("");
     setLoading(true);
 
@@ -54,6 +68,27 @@ export function useSearch() {
           `Request failed with status ${response.status}`
         );
       }
+
+      // --------------------------------
+      // YouTube search
+      // Returns normal JSON
+      // --------------------------------
+
+      if (mode === "youtube") {
+        const data =
+          await response.json();
+
+        setVideos(
+          data.videos ?? []
+        );
+
+        return;
+      }
+
+      // --------------------------------
+      // Academic / Reddit / Web
+      // Use SSE streaming
+      // --------------------------------
 
       if (!response.body) {
         throw new Error(
@@ -92,11 +127,14 @@ export function useSearch() {
         buffer =
           events.pop() || "";
 
-        for (const event of events) {
+        for (
+          const event of events
+        ) {
           processEvent(event);
         }
       }
 
+      // Process remaining buffer
       if (buffer.trim()) {
         processEvent(buffer);
       }
@@ -157,9 +195,17 @@ export function useSearch() {
 
       switch (eventType) {
 
+        // ----------------------------
+        // Sources
+        // ----------------------------
+
         case "sources":
           setSources(parsed);
           break;
+
+        // ----------------------------
+        // Streaming answer
+        // ----------------------------
 
         case "response":
           setAnswer(
@@ -168,12 +214,20 @@ export function useSearch() {
           );
           break;
 
+        // ----------------------------
+        // Error
+        // ----------------------------
+
         case "error":
           setError(
             parsed?.error ||
               "Search failed"
           );
           break;
+
+        // ----------------------------
+        // Search completed
+        // ----------------------------
 
         case "end":
           setLoading(false);
@@ -195,6 +249,7 @@ export function useSearch() {
   return {
     answer,
     sources,
+    videos,
     loading,
     error,
     search,

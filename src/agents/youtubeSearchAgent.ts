@@ -48,7 +48,9 @@ export function handleYoutubeSearch(
       const searchData =
         await searchSearxng(
           rewrittenQuery,
-          ["youtube"]
+           {
+            engines: "youtube",
+           }
         );
 
       const results =

@@ -12,11 +12,12 @@ import {
   handleRedditSearch,
 } from "../agents/redditSearchAgent.js";
 
+import {
+  videoSearchAgent,
+} from "../agents/videoSearchAgent.js";
+
 import { handleStream } from "../utils/handleStream.js";
 
-import {
-  handleYoutubeSearch,
-} from "../agents/youtubeSearchAgent.js";
 
 const router = Router();
 
@@ -24,28 +25,50 @@ router.post("/", async (req, res) => {
   try {
     const { query, mode } = req.body;
 
+    // --------------------------------
+    // Validate query
+    // --------------------------------
+
     if (!query || typeof query !== "string") {
       return res.status(400).json({
         error: "Query is required",
       });
     }
 
+    // --------------------------------
+    // YouTube Search
+    // --------------------------------
+    // YouTube returns normal JSON,
+    // not an SSE stream.
+
+    if (mode === "youtube") {
+      const videos =
+        await videoSearchAgent(query);
+
+      return res.json({
+        videos,
+      });
+    }
+
+    // --------------------------------
+    // Select streaming search agent
+    // --------------------------------
+
     let emitter;
 
-    // --------------------------------
-    // Select search agent
-    // --------------------------------
+    if (mode === "reddit") {
+      emitter =
+        handleRedditSearch(query);
 
-   if (mode === "reddit") {
-  emitter = handleRedditSearch(query);
-} else if (mode === "web") {
-  emitter = handleWebSearch(query);
-} else if (mode === "youtube") {
-  emitter = handleYoutubeSearch(query);
-} else {
-  emitter =
-    academicSearchAgentStream(query);
-}
+    } else if (mode === "web") {
+      emitter =
+        handleWebSearch(query);
+
+    } else {
+      // Academic is the default mode
+      emitter =
+        academicSearchAgentStream(query);
+    }
 
     // --------------------------------
     // Handle SSE stream
@@ -57,7 +80,10 @@ router.post("/", async (req, res) => {
     );
 
   } catch (error) {
-    console.error(error);
+    console.error(
+      "Search route error:",
+      error
+    );
 
     if (!res.headersSent) {
       res.status(500).json({

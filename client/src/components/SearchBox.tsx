@@ -6,7 +6,7 @@ export type SearchMode =
   | "academic"
   | "reddit"
   | "web"
-  | "youtube";
+  | "video";
 
 interface SearchBoxProps {
   onSearch: (
@@ -62,7 +62,7 @@ function SearchBox({
           Web
         </option>
 
-        <option value="youtube">
+        <option value="video">
           YouTube
         </option>
       </select>

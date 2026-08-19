@@ -1,5 +1,6 @@
 import "./App.css";
 
+import VideoResults from "./components/VideoResults";
 import SearchBox from "./components/SearchBox";
 import Sources from "./components/Sources";
 import Answer from "./components/Answer";
@@ -10,13 +11,14 @@ function App() {
   const {
     answer,
     sources,
+    videos,
     loading,
     error,
     search,
   } = useSearch();
 
   const hasResult =
-    answer || sources.length > 0 || loading;
+    answer || sources.length > 0 || videos.length > 0 || loading;
 
   return (
     <div className="app">
@@ -76,6 +78,10 @@ function App() {
 
 {sources.length > 0 && (
   <Sources sources={sources} />
+)}
+
+{videos.length > 0 && (
+  <VideoResults videos={videos} />
 )}
 
         {loading && !answer && (

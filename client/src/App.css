@@ -489,3 +489,86 @@ input {
   cursor: pointer;
   flex-shrink: 0;
 }
+/* ---------- VIDEO RESULTS ---------- */
+
+.video-results {
+  width: 100%;
+  max-width: 900px;
+  margin: 40px auto 0;
+  padding: 0 20px 50px;
+}
+
+.video-results h2 {
+  margin: 0 0 18px;
+  font-size: 20px;
+  color: #111;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.video-card {
+  display: block;
+  overflow: hidden;
+
+  border: 1px solid #eeeeee;
+  border-radius: 12px;
+
+  background: white;
+
+  text-decoration: none;
+  color: #171717;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.video-card:hover {
+  transform: translateY(-2px);
+
+  border-color: #dddddd;
+
+  box-shadow:
+    0 6px 20px
+    rgba(0, 0, 0, 0.08);
+}
+
+.video-card img {
+  display: block;
+
+  width: 100%;
+  aspect-ratio: 16 / 9;
+
+  object-fit: cover;
+}
+
+.video-card-content {
+  padding: 13px 14px 15px;
+}
+
+.video-card-content h3 {
+  margin: 0;
+
+  font-size: 15px;
+  line-height: 1.4;
+
+  color: #222;
+}
+
+/* ---------- VIDEO MOBILE ---------- */
+
+@media (max-width: 650px) {
+  .video-results {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .video-grid {
+    grid-template-columns: 1fr;
+  }
+}
