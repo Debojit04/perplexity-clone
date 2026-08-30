@@ -1,35 +1,33 @@
 import { Router } from "express";
 
 import {
-  handleWebSearch,
-} from "../agents/webSearchAgent.js";
+  agentDispatcher,
+} from "../agents/agentDispatcher.js";
 
 import {
-  academicSearchAgentStream,
-} from "../agents/academicSearchAgentStream.js";
-
-import {
-  handleRedditSearch,
-} from "../agents/redditSearchAgent.js";
-
-import {
-  videoSearchAgent,
-} from "../agents/videoSearchAgent.js";
+  suggestionGeneratorAgent,
+} from "../agents/suggestionGeneratorAgent.js";
 
 import { handleStream } from "../utils/handleStream.js";
-
 
 const router = Router();
 
 router.post("/", async (req, res) => {
   try {
-    const { query, mode } = req.body;
+    const {
+      query,
+      mode,
+      chat_history = [],
+    } = req.body;
 
     // --------------------------------
     // Validate query
     // --------------------------------
 
-    if (!query || typeof query !== "string") {
+    if (
+      !query ||
+      typeof query !== "string"
+    ) {
       return res.status(400).json({
         error: "Query is required",
       });
@@ -38,12 +36,10 @@ router.post("/", async (req, res) => {
     // --------------------------------
     // YouTube Search
     // --------------------------------
-    // YouTube returns normal JSON,
-    // not an SSE stream.
 
     if (mode === "youtube") {
       const videos =
-        await videoSearchAgent(query);
+        await agentDispatcher.youtube(query);
 
       return res.json({
         videos,
@@ -51,24 +47,63 @@ router.post("/", async (req, res) => {
     }
 
     // --------------------------------
-    // Select streaming search agent
+    // Image Search
     // --------------------------------
 
-    let emitter;
+    if (mode === "image") {
+      const images =
+        await agentDispatcher.image(query);
 
-    if (mode === "reddit") {
-      emitter =
-        handleRedditSearch(query);
-
-    } else if (mode === "web") {
-      emitter =
-        handleWebSearch(query);
-
-    } else {
-      // Academic is the default mode
-      emitter =
-        academicSearchAgentStream(query);
+      return res.json({
+        images,
+      });
     }
+
+    // --------------------------------
+    // Suggestion Generator
+    // --------------------------------
+
+    if (mode === "suggestions") {
+      const suggestions =
+        await suggestionGeneratorAgent({
+          chat_history,
+        });
+
+      return res.json({
+        suggestions,
+      });
+    }
+
+    // --------------------------------
+    // Writing Assistant
+    // --------------------------------
+
+    if (mode === "writing") {
+      const emitter =
+        agentDispatcher.writing(
+          query,
+          chat_history
+        );
+
+      return handleStream(
+        res,
+        emitter
+      );
+    }
+
+    // --------------------------------
+    // Streaming Search Agents
+    // --------------------------------
+
+    const searchMode =
+      mode === "reddit"
+        ? "reddit"
+        : mode === "web"
+        ? "web"
+        : "academic";
+
+    const emitter =
+      agentDispatcher[searchMode](query);
 
     // --------------------------------
     // Handle SSE stream
@@ -87,7 +122,10 @@ router.post("/", async (req, res) => {
 
     if (!res.headersSent) {
       res.status(500).json({
-        error: "Something went wrong",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Something went wrong",
       });
     }
   }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import type { FormEvent } from "react";
 import { Search } from "lucide-react";
 
@@ -6,7 +6,9 @@ export type SearchMode =
   | "academic"
   | "reddit"
   | "web"
-  | "video";
+  | "youtube"
+  | "image"
+  | "writing";
 
 interface SearchBoxProps {
   onSearch: (
@@ -62,8 +64,16 @@ function SearchBox({
           Web
         </option>
 
-        <option value="video">
+        <option value="youtube">
           YouTube
+        </option>
+
+        <option value="image">
+          Images
+        </option>
+
+        <option value="writing">
+          Writing
         </option>
       </select>
 

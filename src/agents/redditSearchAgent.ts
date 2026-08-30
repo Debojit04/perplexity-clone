@@ -42,6 +42,15 @@ export function handleRedditSearch(
         rewrittenQuery
       );
 
+      if (
+        rewrittenQuery.trim().toLowerCase() ===
+        "not_needed"
+      ) {
+        emitter.emit("response", "This question does not require a Reddit search.");
+        emitter.emit("end");
+        return;
+      }
+
       // --------------------------------
       // 2. Search Reddit with SearXNG
       // --------------------------------

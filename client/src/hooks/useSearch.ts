@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 
 export interface Source {
   id: number;
@@ -13,22 +13,88 @@ export interface Video {
   iframe_src: string;
 }
 
+export interface ImageResult {
+  img_src: string;
+  url: string;
+  title: string;
+}
+
 export type SearchMode =
   | "academic"
   | "reddit"
   | "web"
-  | "youtube";
+  | "youtube"
+  | "image"
+  | "writing";
 
 export function useSearch() {
   const [answer, setAnswer] = useState("");
-  const [sources, setSources] =
-    useState<Source[]>([]);
-  const [videos, setVideos] =
-    useState<Video[]>([]);
-  const [loading, setLoading] =
-    useState(false);
-  const [error, setError] =
-    useState("");
+  const [sources, setSources] = useState<Source[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [images, setImages] = useState<ImageResult[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // --------------------------------
+  // Generate suggestions
+  // --------------------------------
+
+  const getSuggestions = async (
+    query: string,
+    currentAnswer: string
+  ) => {
+    try {
+      const response = await fetch("/api/search", {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          query: "Generate related questions",
+
+          mode: "suggestions",
+
+          chat_history: [
+            {
+              role: "user",
+              content: query,
+            },
+            {
+              role: "assistant",
+              content: currentAnswer,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Suggestion request failed with status ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      setSuggestions(data.suggestions ?? []);
+    } catch (err) {
+      console.error(
+        "Suggestion generation error:",
+        err
+      );
+
+      // Suggestions are optional.
+      // Do not show an error to the user
+      // if only suggestion generation fails.
+      setSuggestions([]);
+    }
+  };
+
+  // --------------------------------
+  // Main search
+  // --------------------------------
 
   const search = async (
     query: string,
@@ -38,10 +104,15 @@ export function useSearch() {
       return;
     }
 
+    // --------------------------------
     // Clear previous search
+    // --------------------------------
+
     setAnswer("");
     setSources([]);
     setVideos([]);
+    setImages([]);
+    setSuggestions([]);
     setError("");
     setLoading(true);
 
@@ -70,8 +141,7 @@ export function useSearch() {
       }
 
       // --------------------------------
-      // YouTube search
-      // Returns normal JSON
+      // YouTube
       // --------------------------------
 
       if (mode === "youtube") {
@@ -86,8 +156,23 @@ export function useSearch() {
       }
 
       // --------------------------------
-      // Academic / Reddit / Web
-      // Use SSE streaming
+      // Image search
+      // --------------------------------
+
+      if (mode === "image") {
+        const data =
+          await response.json();
+
+        setImages(
+          data.images ?? []
+        );
+
+        return;
+      }
+
+      // --------------------------------
+      // Streaming modes
+      // Academic / Reddit / Web / Writing
       // --------------------------------
 
       if (!response.body) {
@@ -103,6 +188,12 @@ export function useSearch() {
         new TextDecoder();
 
       let buffer = "";
+
+      // Keep the complete answer locally.
+      // This is important because React state
+      // updates are asynchronous.
+
+      let completeAnswer = "";
 
       while (true) {
         const {
@@ -130,15 +221,60 @@ export function useSearch() {
         for (
           const event of events
         ) {
-          processEvent(event);
+          const result =
+            processEvent(event);
+
+          if (
+            result?.type ===
+            "response"
+          ) {
+            completeAnswer +=
+              result.data;
+          }
         }
       }
 
-      // Process remaining buffer
+      // --------------------------------
+      // Process remaining SSE data
+      // --------------------------------
+
       if (buffer.trim()) {
-        processEvent(buffer);
+        const result =
+          processEvent(buffer);
+
+        if (
+          result?.type ===
+          "response"
+        ) {
+          completeAnswer +=
+            result.data;
+        }
       }
 
+      // --------------------------------
+      // Generate suggestions
+      // --------------------------------
+      //
+      // Only generate suggestions for
+      // normal conversational searches.
+      //
+      // Writing responses can also have
+      // suggestions if desired.
+
+      if (
+        completeAnswer.trim() &&
+        (
+          mode === "academic" ||
+          mode === "reddit" ||
+          mode === "web" ||
+          mode === "writing"
+        )
+      ) {
+        await getSuggestions(
+          query,
+          completeAnswer
+        );
+      }
     } catch (err) {
       console.error(
         "Search error:",
@@ -150,23 +286,30 @@ export function useSearch() {
           ? err.message
           : "Something went wrong"
       );
-
     } finally {
       setLoading(false);
     }
   };
 
+  // --------------------------------
+  // Process SSE event
+  // --------------------------------
+
   const processEvent = (
     event: string
-  ) => {
+  ): {
+    type: string;
+    data: string;
+  } | null => {
     const lines =
       event.split("\n");
 
     let eventType = "";
     let data = "";
 
-    for (const line of lines) {
-
+    for (
+      const line of lines
+    ) {
       if (
         line.startsWith("event:")
       ) {
@@ -179,14 +322,15 @@ export function useSearch() {
       if (
         line.startsWith("data:")
       ) {
-        data += line
-          .substring(5)
-          .trimStart();
+        data +=
+          line
+            .substring(5)
+            .trimStart();
       }
     }
 
     if (!data) {
-      return;
+      return null;
     }
 
     try {
@@ -194,7 +338,6 @@ export function useSearch() {
         JSON.parse(data);
 
       switch (eventType) {
-
         // ----------------------------
         // Sources
         // ----------------------------
@@ -209,10 +352,14 @@ export function useSearch() {
 
         case "response":
           setAnswer(
-            (previous) =>
+            previous =>
               previous + parsed
           );
-          break;
+
+          return {
+            type: "response",
+            data: parsed,
+          };
 
         // ----------------------------
         // Error
@@ -230,28 +377,47 @@ export function useSearch() {
         // ----------------------------
 
         case "end":
-          setLoading(false);
           break;
 
         default:
           break;
       }
 
+      return null;
     } catch (error) {
       console.error(
         "Failed to parse SSE event:",
         error,
         event
       );
+
+      return null;
     }
+  };
+
+  // --------------------------------
+  // Suggestion click
+  // --------------------------------
+
+  const handleSuggestionClick = (
+    suggestion: string
+  ) => {
+    search(
+      suggestion,
+      "web"
+    );
   };
 
   return {
     answer,
     sources,
     videos,
+    images,
+    suggestions,
     loading,
     error,
     search,
+    getSuggestions,
+    handleSuggestionClick,
   };
 }

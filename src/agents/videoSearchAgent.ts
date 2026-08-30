@@ -1,7 +1,9 @@
 import "dotenv/config";
 
 import { llm } from "../lib/llm.js";
+
 import { searchSearxng } from "../lib/searxng.js";
+
 import { videoSearchPrompt } from "../prompts/videoPrompt.js";
 
 export async function videoSearchAgent(
@@ -30,7 +32,18 @@ export async function videoSearchAgent(
   );
 
   // --------------------------------
-  // 2. Search YouTube with SearXNG
+  // 2. Handle not_needed
+  // --------------------------------
+
+  if (
+    rewrittenQuery.toLowerCase() ===
+    "not_needed"
+  ) {
+    return [];
+  }
+
+  // --------------------------------
+  // 3. Search YouTube with SearXNG
   // --------------------------------
 
   const searchData =
@@ -49,7 +62,7 @@ export async function videoSearchAgent(
   );
 
   // --------------------------------
-  // 3. Validate video results
+  // 4. Validate video results
   // --------------------------------
 
   const videos = results
@@ -73,7 +86,7 @@ export async function videoSearchAgent(
   );
 
   // --------------------------------
-  // 4. Return videos
+  // 5. Return videos
   // --------------------------------
 
   return videos;

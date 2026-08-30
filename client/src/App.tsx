@@ -1,6 +1,8 @@
 import "./App.css";
 
 import VideoResults from "./components/VideoResults";
+import ImageResults from "./components/ImageResults";
+import Suggestions from "./components/Suggestions";
 import SearchBox from "./components/SearchBox";
 import Sources from "./components/Sources";
 import Answer from "./components/Answer";
@@ -12,17 +14,24 @@ function App() {
     answer,
     sources,
     videos,
+    images,
+    suggestions,
     loading,
     error,
     search,
+    handleSuggestionClick,
   } = useSearch();
 
   const hasResult =
-    answer || sources.length > 0 || videos.length > 0 || loading;
+    answer ||
+    sources.length > 0 ||
+    videos.length > 0 ||
+    images.length > 0 ||
+    suggestions.length > 0 ||
+    loading;
 
   return (
     <div className="app">
-
       <header className="topbar">
         <div className="logo">
           <div className="logo-mark">P</div>
@@ -31,7 +40,9 @@ function App() {
 
         <button
           className="new-search"
-          onClick={() => window.location.reload()}
+          onClick={() =>
+            window.location.reload()
+          }
         >
           + New Search
         </button>
@@ -44,7 +55,6 @@ function App() {
             : "main"
         }
       >
-
         {!hasResult && (
           <div className="welcome">
             <h1>
@@ -65,37 +75,60 @@ function App() {
 
         {error && (
           <div className="error">
-            <strong>Something went wrong</strong>
+            <strong>
+              Something went wrong
+            </strong>
+
             <p>{error}</p>
           </div>
         )}
-{answer && (
-  <Answer
-    answer={answer}
-    loading={loading}
-  />
-)}
 
-{sources.length > 0 && (
-  <Sources sources={sources} />
-)}
+        {answer && (
+          <Answer
+            answer={answer}
+            loading={loading}
+          />
+        )}
 
-{videos.length > 0 && (
-  <VideoResults videos={videos} />
-)}
+        {sources.length > 0 && (
+          <Sources
+            sources={sources}
+          />
+        )}
+
+        {videos.length > 0 && (
+          <VideoResults
+            videos={videos}
+          />
+        )}
+
+        {images.length > 0 && (
+          <ImageResults
+            images={images}
+          />
+        )}
+
+        {suggestions.length > 0 && (
+          <Suggestions
+            suggestions={suggestions}
+            onSuggestionClick={
+              handleSuggestionClick
+            }
+          />
+        )}
 
         {loading && !answer && (
           <div className="loading">
             <div className="loading-dot"></div>
-            <span>Searching the web...</span>
+
+            <span>
+              Searching the web...
+            </span>
           </div>
         )}
-
       </main>
-
     </div>
   );
 }
 
 export default App;
-
