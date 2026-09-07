@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Sparkles } from "lucide-react";
 
 interface AnswerProps {
   answer: string;
@@ -10,7 +11,17 @@ function Answer({ answer, loading = false }: AnswerProps) {
   if (loading) {
     return (
       <section className="answer">
-        <h2>Answer</h2>
+        <div className="answer-header">
+          <div className="answer-title">
+            <div className="answer-icon">
+              <Sparkles size={17} />
+            </div>
+
+            <h2>Answer</h2>
+          </div>
+
+          <span className="answer-status">Generating</span>
+        </div>
 
         <div className="answer-loading">
           <span className="loading-spinner"></span>
@@ -26,7 +37,17 @@ function Answer({ answer, loading = false }: AnswerProps) {
 
   return (
     <section className="answer">
-      <h2>Answer</h2>
+      <div className="answer-header">
+        <div className="answer-title">
+          <div className="answer-icon">
+            <Sparkles size={17} />
+          </div>
+
+          <h2>Answer</h2>
+        </div>
+
+        <span className="answer-status">AI Generated</span>
+      </div>
 
       <div className="answer-content">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>

@@ -34,36 +34,24 @@ function App() {
     <div className="app">
       <header className="topbar">
         <div className="logo">
-          <div className="logo-mark">P</div>
           <span>Perplexity Clone</span>
         </div>
 
         <button
-          className="new-search"
-          onClick={() =>
-            window.location.reload()
-          }
+          className="new-search-btn"
+          onClick={() => window.location.reload()}
         >
           + New Search
         </button>
       </header>
 
-      <main
-        className={
-          hasResult
-            ? "main has-result"
-            : "main"
-        }
-      >
+      <main className={hasResult ? "main has-result" : "main"}>
         {!hasResult && (
           <div className="welcome">
-            <h1>
-              What do you want to know?
-            </h1>
+            <h1>What do you want to know?</h1>
 
             <p>
-              Search the web and get
-              AI-powered answers with sources.
+              Search the web and get AI-powered answers with sources.
             </p>
           </div>
         )}
@@ -75,10 +63,7 @@ function App() {
 
         {error && (
           <div className="error">
-            <strong>
-              Something went wrong
-            </strong>
-
+            <strong>Something went wrong</strong>
             <p>{error}</p>
           </div>
         )}
@@ -111,9 +96,7 @@ function App() {
         {suggestions.length > 0 && (
           <Suggestions
             suggestions={suggestions}
-            onSuggestionClick={
-              handleSuggestionClick
-            }
+            onSuggestionClick={handleSuggestionClick}
           />
         )}
 
@@ -121,9 +104,7 @@ function App() {
           <div className="loading">
             <div className="loading-dot"></div>
 
-            <span>
-              Searching the web...
-            </span>
+            <span>Searching the web...</span>
           </div>
         )}
       </main>
